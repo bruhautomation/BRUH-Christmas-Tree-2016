@@ -1,0 +1,191 @@
+homeassistant:
+  # Name of the location where Home Assistant is running
+  name: North Pole
+  # Location required to calculate the time the sun rises and sets
+  latitude: 86.400000
+  longitude: 166.300000
+  # Impacts weather/sunrise data (altitude above sea level in meters)
+  elevation: 0
+  # metric for Metric, imperial for Imperial
+  unit_system: imperial
+  # Pick yours from here: http://en.wikipedia.org/wiki/List_of_tz_database_time_zones
+  time_zone: America/New_York
+  customize:
+    switch.mqtt_switch:
+      friendly_name: White Lights
+      icon: mdi:led-outline
+    switch.wemo_insight:
+      friendly_name: Red Core Lights
+      icon: mdi:led-outline
+    light.digital_leds:
+      friendly_name:  Fancy LEDs
+      icon: mdi:led-outline
+##Weather
+    sensor.yr_cloudiness:
+      friendly_name: Cloud Level
+      icon: mdi:cloud
+    sensor.yr_humidity:
+      friendly_name: Humidity
+      icon: mdi:water-percent
+    sensor.yr_precipitation:
+      friendly_name: Precipitation
+      icon: mdi:weather-snowy-rainy
+    sensor.yr_pressure:
+      friendly_name: Pressure
+      icon: mdi:gauge
+    sensor.yr_temperature:
+      friendly_name: Thermometer
+      icon: mdi:thermometer
+    sensor.yr_wind_speed:
+      friendly_name: Wind Speed
+      icon: mdi:weather-windy
+    device_tracker.Kris:
+      friendly_name: Kris
+      entity_picture: /local/santa.jpg
+    weblink.live_stream:
+      friendly_name: Live Stream Link
+      icon: mdi:camera
+
+device_tracker:
+  - platform: mqtt
+    devices:
+      Kris: /location/santa
+
+# Enables the frontend
+frontend:
+
+http:
+  # Uncomment this to add a password (recommended!)
+  # api_password: PASSWORD
+
+# Checks for available updates
+updater:
+
+# Track the sun
+sun:
+
+# Weather Prediction
+sensor:
+  - platform: yr
+    monitored_conditions:
+      - temperature
+      - precipitation
+      - windSpeed
+      - pressure
+      - humidity
+      - cloudiness
+
+weblink:
+  entities:
+    - name: Live Stream
+      url: https://www.youtube.com/c/Bruhautomation1/live
+
+wemo:
+
+switch: 
+  - platform: mqtt
+    command_topic: "cmnd2/sonoff/power"
+    state_topic: "stat2/sonoff/POWER"
+
+mqtt:
+  broker: 127.0.0.1
+  port: 1883
+  client_id: home-assistant-1
+  username: username
+  password: password
+    
+light:
+  - platform: mqtt
+    name: "Digital LEDs"
+    command_topic: "bruh/mqttstrip/setpower"
+    state_topic: "bruh/mqttstrip/setpowerpub"
+    rgb_state_topic: "bruh/mqttstrip/setcolorpub"
+    rgb_command_topic: "bruh/mqttstrip/setcolor"
+    brightness_state_topic: "bruh/mqttstrip/setbrightnesspub"
+    brightness_command_topic: "bruh/mqttstrip/setbrightness"
+    optimistic: false
+
+input_select:
+  led_effect:
+    name: Porch LED Effect
+    options:
+     - "BPM"
+     - "Candy Cane"
+     - "Confetti"
+     - "Cyclon Rainbow"
+     - "Dots"
+     - "Fire"
+     - "Glitter"
+     - "Juggle"
+     - "Lightning"
+     - "Noise"
+     - "Police All"
+     - "Police One"
+     - "Rainbow"
+     - "Rainbow with Glitter"
+     - "Ripple"
+     - "Sinelon"
+     - "Solid"
+     - "Twinkle"
+    initial: "Solid"
+
+input_slider:
+  animation_speed:
+    name: Animation Speed
+    initial: 150
+    min: 1
+    max: 150
+    step: 10
+
+automation: 
+  - alias: "Input Effect"
+    initial_state: True
+    hide_entity: True
+    trigger:
+      - platform: state
+        entity_id: input_select.led_effect
+    action:
+      - service: mqtt.publish
+        data_template:
+          topic: "bruh/mqttstrip/seteffect"
+          payload: '{{ trigger.to_state.state | string }}'
+
+  - alias: "Animation Speed"
+    initial_state: True
+    hide_entity: True
+    trigger:
+      - platform: state
+        entity_id: input_slider.animation_speed
+    action:
+      - service: mqtt.publish
+        data_template:
+          topic: "bruh/mqttstrip/setanimationspeed"
+          payload: '{{ trigger.to_state.state | int }}'
+
+group:
+  christmas_tree:
+    name: Christmas Tree Lights
+    entities:
+      - weblink.live_stream
+      - switch.mqtt_switch
+      - switch.wemo_insight
+      - light.digital_leds
+  effect_controls:
+    name: Effect Controls
+    view: no
+    entities:
+      - light.digital_leds
+      - input_select.led_effect
+      - input_slider.animation_speed
+  weather:
+    name: Current Weather
+    view: no
+    entities:
+      - sensor.yr_cloudiness
+      - sensor.yr_humidity
+      - sensor.yr_precipitation
+      - sensor.yr_pressure
+      - sensor.yr_symbol
+      - sensor.yr_temperature
+      - sensor.yr_wind_speed
+      - sun.sun
